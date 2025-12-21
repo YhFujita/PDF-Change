@@ -126,13 +126,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Process Files
     function handleFiles(files) {
-        // Check for PDF by MIME type OR file extension for better cross-browser/OS compatibility
+        // Check for PDF or Images by MIME type OR file extension
         const validFiles = Array.from(files).filter(file => {
-            return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            const type = file.type;
+            const name = file.name.toLowerCase();
+            return type === 'application/pdf' || name.endsWith('.pdf') ||
+                type === 'image/jpeg' || name.endsWith('.jpg') || name.endsWith('.jpeg') ||
+                type === 'image/png' || name.endsWith('.png');
         });
 
         if (validFiles.length === 0 && files.length > 0) {
-            alert('PDFファイルのみアップロード可能です。');
+            alert('PDFファイルまたは画像ファイル（JPG, PNG）のみアップロード可能です。');
             return;
         }
 
@@ -148,10 +152,16 @@ document.addEventListener('DOMContentLoaded', () => {
         li.className = 'file-item'; // CSSで cursor: grab を設定済み
         li.dataset.id = id;
 
+        // Determine icon based on file type
+        let iconClass = 'fa-file-pdf';
+        if (file.type.startsWith('image/') || /\.(jpg|jpeg|png)$/i.test(file.name)) {
+            iconClass = 'fa-file-image';
+        }
+
         li.innerHTML = `
             <div class="file-info">
                 <i class="fa-solid fa-grip-vertical drag-handle" title="ドラッグして並べ替え"></i>
-                <i class="fa-solid fa-file-pdf file-icon"></i>
+                <i class="fa-solid ${iconClass} file-icon"></i>
                 <div class="file-details">
                     <span class="file-name" title="${file.name}">${file.name}</span>
                     <span class="file-size">${formatFileSize(file.size)}</span>
@@ -248,9 +258,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (file) {
                     const arrayBuffer = await file.arrayBuffer();
-                    const pdf = await PDFDocument.load(arrayBuffer);
-                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                        // Handle PDF
+                        const pdf = await PDFDocument.load(arrayBuffer);
+                        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                        copiedPages.forEach((page) => mergedPdf.addPage(page));
+                    } else if (file.type.startsWith('image/') || /\.(jpg|jpeg|png)$/i.test(file.name)) {
+                        // Handle Image
+                        let image;
+                        if (file.type === 'image/png' || file.name.toLowerCase().endsWith('.png')) {
+                            image = await mergedPdf.embedPng(arrayBuffer);
+                        } else { // JPG
+                            image = await mergedPdf.embedJpg(arrayBuffer);
+                        }
+
+                        // Add page with image size
+                        const page = mergedPdf.addPage([image.width, image.height]);
+                        page.drawImage(image, {
+                            x: 0,
+                            y: 0,
+                            width: image.width,
+                            height: image.height,
+                        });
+                    }
                 }
             }
 
