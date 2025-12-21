@@ -20,6 +20,8 @@
     <!-- Libraries -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
@@ -38,14 +40,8 @@
                 <i class="fa-solid fa-layer-group"></i>
                 <h1>PDF Connector</h1>
             </div>
-            <nav class="app-nav">
-                <!-- 将来的な機能拡張のためのナビゲーションプレースホルダー -->
-                <button class="nav-btn active" title="PDF結合"><i class="fa-solid fa-link"></i> <span>結合</span></button>
-                <button class="nav-btn disabled" title="近日公開: Word変換"><i class="fa-solid fa-file-word"></i>
-                    <span>Word変換</span></button>
-                <button class="nav-btn disabled" title="近日公開: 画像変換"><i class="fa-solid fa-image"></i>
-                    <span>画像変換</span></button>
-            </nav>
+            <!-- Navigation removed as per user request -->
+            <!-- <nav class="app-nav"> ... </nav> -->
         </header>
 
         <main class="main-content">
@@ -68,9 +64,22 @@
                     </section>
 
                     <section class="action-section hidden" id="action-section">
-                        <button id="merge-btn" class="primary-btn glow-effect">
-                            <i class="fa-solid fa-file-pdf"></i> 結合してダウンロード
-                        </button>
+                        <div class="action-buttons-container">
+                            <button id="merge-btn" class="action-btn-large primary-gradient glow-effect">
+                                <span class="btn-icon"><i class="fa-solid fa-file-pdf"></i></span>
+                                <span class="btn-text">
+                                    <span class="btn-title">結合してダウンロード</span>
+                                    <span class="btn-subtitle">PDFファイルとして保存</span>
+                                </span>
+                            </button>
+                            <button id="convert-btn" class="action-btn-large secondary-gradient glow-effect">
+                                <span class="btn-icon"><i class="fa-solid fa-images"></i></span>
+                                <span class="btn-text">
+                                    <span class="btn-title">画像に変換してプレビュー</span>
+                                    <span class="btn-subtitle">高画質PNGとして生成</span>
+                                </span>
+                            </button>
+                        </div>
                     </section>
                 </div>
 
@@ -91,6 +100,20 @@
                     </section>
                 </div>
             </div>
+
+            <section id="preview-section" class="preview-section hidden">
+                <div class="glass-panel preview-panel">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-images"></i> 変換結果プレビュー</h3>
+                        <button id="download-zip-btn" class="secondary-btn small-btn">
+                            <i class="fa-solid fa-file-zipper"></i> まとめてZIP保存
+                        </button>
+                    </div>
+                    <div id="preview-grid" class="preview-grid">
+                        <!-- Images will be injected here -->
+                    </div>
+                </div>
+            </section>
         </main>
 
         <footer class="app-footer">

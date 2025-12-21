@@ -240,43 +240,6 @@ body {
     letter-spacing: 0.5px;
 }
 
-.app-nav {
-    display: flex;
-    gap: 1rem;
-}
-
-.nav-btn {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-family: var(--font-body);
-    font-weight: 500;
-    cursor: pointer;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.nav-btn.active {
-    background: var(--glass-bg);
-    color: white;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--glass-border);
-}
-
-.nav-btn.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.nav-btn:not(.disabled):hover {
-    color: white;
-    background: rgba(255, 255, 255, 0.03);
-}
-
 /* Glass Panel Utility */
 .glass-panel {
     background: rgba(255, 255, 255, 0.03);
@@ -427,12 +390,84 @@ input[type="file"] {
     color: var(--text-muted);
 }
 
-/* File List Section */
-/* Removed .file-list-section.hidden selector as it is now controlled by column-right */
+/* Action Section Improvements */
 .action-section.hidden,
 .loading-overlay.hidden {
     display: none;
 }
+
+.action-buttons-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+@media (min-width: 600px) {
+    .action-buttons-container {
+        flex-direction: row;
+        gap: 1.5rem;
+    }
+}
+
+.action-btn-large {
+    flex: 1;
+    border: none;
+    border-radius: 12px;
+    padding: 1.2rem;
+    cursor: pointer;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.action-btn-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
+}
+
+.primary-gradient {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+}
+
+.secondary-gradient {
+    background: linear-gradient(135deg, var(--secondary-color), #be185d);
+}
+
+.btn-icon {
+    font-size: 1.8rem;
+    background: rgba(255, 255, 255, 0.2);
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-text {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.btn-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.btn-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+/* File List Section */
+/* Removed .file-list-section.hidden selector as it is now controlled by column-right */
 
 .list-panel {
     padding: 1.5rem;
@@ -522,4 +557,142 @@ input[type="file"] {
         max-width: 100%;
         flex: 1;
     }
+}
+
+/* Preview Section */
+.preview-section {
+    width: 100%;
+    margin-top: 2rem;
+    animation: fadeIn 0.5s ease;
+}
+
+.preview-section.hidden {
+    display: none;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.image-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    transition: transform 0.2s ease;
+    border: 1px solid var(--glass-border);
+}
+
+.image-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary-color);
+}
+
+.image-preview {
+    width: 100%;
+    height: 150px;
+    object-fit: contain;
+    background: #000;
+    border-radius: 4px;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.img-name {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.download-single-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.download-single-btn:hover {
+    background: var(--primary-hover);
+}
+
+.secondary-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid var(--glass-border);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Compact Upload Area (when files exist) */
+.upload-area.compact {
+    min-height: 120px;
+    padding: 1.5rem;
+}
+
+.upload-area.compact .upload-icon {
+    font-size: 2rem;
+}
+
+.upload-area.compact h2 {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.upload-area.compact p {
+    display: none;
+}
+
+.upload-area.compact .upload-content {
+    gap: 0.8rem;
+    flex-direction: row;
+}
+
+.upload-area.compact .custom-file-upload-look {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.9rem;
+}
+
+.upload-area.compact .limit-info {
+    display: none;
 }

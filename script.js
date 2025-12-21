@@ -7,12 +7,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileCount = document.getElementById('file-count');
     const actionSection = document.getElementById('action-section');
     const mergeBtn = document.getElementById('merge-btn');
+
+    const convertBtn = document.getElementById('convert-btn');
     const clearBtn = document.getElementById('clear-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
+
+    // Nav elements removed
+    const previewSection = document.getElementById('preview-section');
+    const previewGrid = document.getElementById('preview-grid');
+    const downloadZipBtn = document.getElementById('download-zip-btn');
 
     // State
     const filesMap = new Map(); // ID -> File object
     let sortableInstance = null;
+    // Mode state removed
+
+    // Configure PDF.js Worker (Handle file:// and CORS issues by using Blob)
+    const pdfjsWorkerUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // Attempt to load worker via blob to bypass CORS on file protocol if possible
+    // If fetch fails (strict blocking), fall back to setting src directly (might fail but best effort)
+    fetch(pdfjsWorkerUrl)
+        .then(response => {
+            if (!response.ok) throw new Error("Worker fetch failed");
+            return response.text();
+        })
+        .then(workerScript => {
+            const blob = new Blob([workerScript], { type: 'application/javascript' });
+            pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+        })
+        .catch(err => {
+            console.warn("Could not load worker via Blob, falling back to CDN URL directly. This may cause CORS issues on file:// protocol.", err);
+            pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
+        });
 
     // Initialize SortableJS
     initSortable();
@@ -21,8 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDragAndDrop();
     setupFileInput();
 
+    // Nav listeners removed
     mergeBtn.addEventListener('click', mergePDFs);
+    convertBtn.addEventListener('click', convertToImages);
     clearBtn.addEventListener('click', clearAllFiles);
+    downloadZipBtn.addEventListener('click', downloadAsZip);
+
+    // Global variable to store zip content for delayed download
+    let currentZip = null;
 
     // SortableJS Initialization
     function initSortable() {
@@ -154,6 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('すべてのファイルを削除しますか？')) {
             fileList.innerHTML = '';
             filesMap.clear();
+
+            // Clear preview as well
+            previewGrid.innerHTML = '';
+            previewSection.classList.add('hidden');
+            currentZip = null;
+
             updateUI();
         }
     }
@@ -168,11 +207,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (count > 0) {
             if (fileListColumn) fileListColumn.classList.remove('hidden');
             actionSection.classList.remove('hidden');
+            // Always show both buttons now
+
+            // Optimization: Make upload area compact
+            dropZone.classList.add('compact');
         } else {
             if (fileListColumn) fileListColumn.classList.add('hidden');
             actionSection.classList.add('hidden');
+
+            // Restore upload area size
+            dropZone.classList.remove('compact');
         }
     }
+
+    // switchMode function removed
 
     // PDF Merge Logic
     async function mergePDFs() {
@@ -181,6 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
         }
+
+        // Hide preview if exists
+        previewSection.classList.add('hidden');
 
         showLoading(true);
 
@@ -214,8 +265,128 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // PDF Conversion Logic
+    async function convertToImages() {
+        if (filesMap.size === 0) return;
+
+        showLoading(true);
+        previewGrid.innerHTML = ''; // Clear previous results
+        previewSection.classList.add('hidden');
+        currentZip = null;
+
+        try {
+            const zip = new JSZip();
+            const imgFolder = zip.folder("images");
+            let fileCounter = 1;
+
+            // Sort files by list order
+            const items = fileList.querySelectorAll('.file-item');
+
+            for (const item of items) {
+                const id = item.dataset.id;
+                const file = filesMap.get(id);
+                if (!file) continue;
+
+                // Get base name without extension
+                const baseName = file.name.replace(/\.[^/.]+$/, "");
+
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 }); // High quality
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({
+                        canvasContext: context,
+                        viewport: viewport
+                    }).promise;
+
+                    // Use PNG for better quality and compatibility
+                    const dataUrl = canvas.toDataURL('image/png');
+
+                    // Remove header to get base64 content
+                    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+
+                    if (!base64Data) {
+                        console.error(`Empty data for File ${fileCounter} Page ${i}`);
+                        continue;
+                    }
+
+                    // Use Original Filename + Page Number
+                    const fileName = `${baseName}_${i}.png`;
+                    imgFolder.file(fileName, base64Data, { base64: true });
+
+                    // Add to Preview (Directly add to DOM)
+                    addImageToPreview(dataUrl, fileName);
+                }
+                fileCounter++;
+            }
+
+            // Generate ZIP blob and store it for "Download ZIP" button
+            const content = await zip.generateAsync({ type: "blob" });
+            currentZip = content;
+
+            // Show Preview Section
+            previewSection.classList.remove('hidden');
+
+            // Note: We do NOT auto-download the ZIP anymore to avoid blocking
+            // The user can click individual download buttons or the ZIP button manually.
+
+        } catch (error) {
+            console.error('Image Conversion Error:', error);
+            alert('画像の変換中にエラーが発生しました。\n(セキュリティソフト等によりスクリプトの実行がブロックされた可能性があります)\n' + error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    function addImageToPreview(dataUrl, fileName) {
+        const card = document.createElement('div');
+        card.className = 'image-card';
+
+        card.innerHTML = `
+            <img src="${dataUrl}" class="image-preview" alt="${fileName}">
+            <div class="card-actions">
+                <span class="img-name" title="${fileName}">${fileName}</span>
+                <button class="download-single-btn" onclick="downloadSingleImage('${fileName}')">
+                    <i class="fa-solid fa-download"></i> 保存
+                </button>
+            </div>
+        `;
+
+        // We need to attach the dataUrl securely to the button or handler. 
+        // Using inline onclick with huge base64 string is bad.
+        // Let's modify the onclick to call a function relying on looking up the img src.
+        const btn = card.querySelector('.download-single-btn');
+        btn.onclick = () => downloadDataUrl(dataUrl, fileName);
+
+        previewGrid.appendChild(card);
+    }
+
+    function downloadDataUrl(dataUrl, fileName) {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    async function downloadAsZip() {
+        if (currentZip) {
+            downloadPDF(currentZip, "converted-images.zip");
+        } else {
+            alert("ダウンロード可能なZIPファイルがありません。まずは変換を実行してください。");
+        }
+    }
+
     function downloadPDF(bytes, fileName) {
-        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const blob = bytes instanceof Blob ? bytes : new Blob([bytes], { type: 'application/pdf' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = fileName;
