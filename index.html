@@ -22,6 +22,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Docx and Tesseract -->
+    <script src="https://unpkg.com/docx@7.1.0/build/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
@@ -79,6 +82,24 @@
                                     <span class="btn-subtitle">高画質PNGとして生成</span>
                                 </span>
                             </button>
+                            <button id="word-btn" class="action-btn-large word-gradient glow-effect">
+                                <span class="btn-icon"><i class="fa-solid fa-file-word"></i></span>
+                                <span class="btn-text">
+                                    <span class="btn-title">Wordに変換</span>
+                                    <span class="btn-subtitle">テキスト抽出 & OCR</span>
+                                </span>
+                            </button>
+                            <label class="checkbox-container text-white">
+                                <input type="checkbox" id="vertical-text-opt">
+                                <span class="checkmark"></span>
+                                <span class="label-text">縦書きの画像を読み取る</span>
+                            </label>
+                        </div>
+                        <div id="progress-container" class="hidden">
+                            <p id="progress-text">処理中...</p>
+                            <div class="progress-bar-bg">
+                                <div id="progress-bar-fill" class="progress-bar-fill"></div>
+                            </div>
                         </div>
                     </section>
                 </div>

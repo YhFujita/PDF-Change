@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const convertBtn = document.getElementById('convert-btn');
     const clearBtn = document.getElementById('clear-btn');
     const loadingOverlay = document.getElementById('loading-overlay');
+    // Word Conversion Elements
+    const wordBtn = document.getElementById('word-btn');
+    const progressContainer = document.getElementById('progress-container');
+    const progressBarFill = document.getElementById('progress-bar-fill');
+    const progressText = document.getElementById('progress-text');
 
     // Nav elements removed
     const previewSection = document.getElementById('preview-section');
@@ -51,6 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Nav listeners removed
     mergeBtn.addEventListener('click', mergePDFs);
     convertBtn.addEventListener('click', convertToImages);
+    if (wordBtn) wordBtn.addEventListener('click', convertToWord);
     clearBtn.addEventListener('click', clearAllFiles);
     downloadZipBtn.addEventListener('click', downloadAsZip);
 
@@ -227,7 +233,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Restore upload area size
             dropZone.classList.remove('compact');
+
+            // Hide progress
+            if (progressContainer) progressContainer.classList.add('hidden');
         }
+    }
+
+    function updateProgress(percent, message) {
+        if (!progressContainer) return;
+        progressContainer.classList.remove('hidden');
+        progressBarFill.style.width = `${percent}%`;
+        progressText.textContent = message;
     }
 
     // switchMode function removed
@@ -443,6 +459,118 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingOverlay.classList.remove('hidden');
         } else {
             loadingOverlay.classList.add('hidden');
+        }
+    }
+    // Word Conversion Logic (Text Extraction + OCR)
+    async function convertToWord() {
+        if (filesMap.size === 0) return;
+
+        // Reset and show progress
+        updateProgress(0, '準備中...');
+        previewSection.classList.add('hidden');
+
+        // Disable buttons
+        mergeBtn.disabled = true;
+        convertBtn.disabled = true;
+        wordBtn.disabled = true;
+
+        try {
+            const paragraphs = [];
+            const items = fileList.querySelectorAll('.file-item');
+            const totalFiles = items.length;
+            let processedCount = 0;
+
+            for (const item of items) {
+                const id = item.dataset.id;
+                const file = filesMap.get(id);
+                if (!file) continue;
+
+                updateProgress((processedCount / totalFiles) * 100, `処理中 (${processedCount + 1}/${totalFiles}): ${file.name}`);
+
+                // Add Filename as Heading
+                paragraphs.push(new docx.Paragraph({
+                    text: file.name,
+                    heading: docx.HeadingLevel.HEADING_1,
+                    spacing: { before: 200, after: 100 }
+                }));
+
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    // Extract Text from PDF
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+
+                        // Simple consolidation of text items
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+
+                        if (pageText.trim()) {
+                            paragraphs.push(new docx.Paragraph({
+                                text: pageText,
+                                spacing: { after: 200 }
+                            }));
+                        }
+                    }
+
+                } else if (file.type.startsWith('image/') || /\.(jpg|jpeg|png)$/i.test(file.name)) {
+                    // OCR for Image
+                    updateProgress((processedCount / totalFiles) * 100, `OCR解析中 (${processedCount + 1}/${totalFiles}): ${file.name} - 少々お待ちください...`);
+
+                    // Create Tesseract worker
+                    const worker = await Tesseract.createWorker('eng+jpn'); // Detect English and Japanese
+                    const ret = await worker.recognize(file);
+                    const text = ret.data.text;
+                    await worker.terminate();
+
+                    if (text.trim()) {
+                        // Split by newlines to respect some formatting
+                        const lines = text.split('\n');
+                        lines.forEach(line => {
+                            if (line.trim()) {
+                                paragraphs.push(new docx.Paragraph({
+                                    text: line,
+                                }));
+                            }
+                        });
+                    } else {
+                        paragraphs.push(new docx.Paragraph({
+                            text: "[文字を認識できませんでした]",
+                            style: "I" // Italic
+                        }));
+                    }
+                }
+
+                processedCount++;
+            }
+
+            // Generate Word Document
+            updateProgress(90, 'Wordファイルを生成中...');
+
+            const doc = new docx.Document({
+                sections: [{
+                    properties: {},
+                    children: paragraphs,
+                }],
+            });
+
+            const blob = await docx.Packer.toBlob(doc);
+            downloadPDF(blob, 'converted_text.docx'); // Reuse download function
+
+            updateProgress(100, '完了！');
+            setTimeout(() => {
+                progressContainer.classList.add('hidden');
+            }, 3000);
+
+        } catch (error) {
+            console.error('Word Conversion Error:', error);
+            alert('Word変換中にエラーが発生しました。\n' + error.message);
+            progressContainer.classList.add('hidden');
+        } finally {
+            mergeBtn.disabled = false;
+            convertBtn.disabled = false;
+            wordBtn.disabled = false;
         }
     }
 });
