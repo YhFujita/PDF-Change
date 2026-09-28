@@ -142,6 +142,95 @@
         </footer>
     </div>
 
+    <!-- マスキング編集モーダル -->
+    <div id="masking-modal" class="modal-overlay hidden">
+        <div class="modal-container masking-modal-container">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-user-shield modal-icon"></i>
+                    <div>
+                        <h3 id="mask-doc-title">個人情報マスキング編集</h3>
+                        <p id="mask-doc-subtitle" class="modal-subtitle">ドラッグして墨消ししたい箇所を四角形で囲んでください</p>
+                    </div>
+                </div>
+                <div class="modal-header-actions">
+                    <!-- ページネーション（PDFなど複数ページ用） -->
+                    <div id="mask-page-nav" class="page-navigation hidden">
+                        <button id="mask-prev-page" class="nav-btn" title="前のページ"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="mask-page-indicator">1 / 1</span>
+                        <button id="mask-next-page" class="nav-btn" title="次のページ"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                    <button id="mask-modal-close" class="modal-close-btn" title="閉じる"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <div class="masking-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">マスク色:</span>
+                    <button id="color-black-btn" class="tool-btn active" data-color="#000000" title="黒塗り（墨消し）">
+                        <span class="color-swatch black"></span> 黒塗り
+                    </button>
+                    <button id="color-white-btn" class="tool-btn" data-color="#ffffff" title="白塗り">
+                        <span class="color-swatch white"></span> 白塗り
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <div class="toolbar-group">
+                    <button id="mask-undo-btn" class="tool-btn" title="元に戻す (Ctrl+Z)">
+                        <i class="fa-solid fa-rotate-left"></i> 元に戻す
+                    </button>
+                    <button id="mask-redo-btn" class="tool-btn" title="やり直し (Ctrl+Y)">
+                        <i class="fa-solid fa-rotate-right"></i> やり直し
+                    </button>
+                    <button id="mask-clear-page-btn" class="tool-btn danger-hover" title="このページのマスクを全消去">
+                        <i class="fa-solid fa-trash-can"></i> ページ内全消去
+                    </button>
+                </div>
+
+                <div class="toolbar-separator"></div>
+
+                <div class="toolbar-group">
+                    <button id="mask-zoom-out" class="tool-btn icon-only" title="縮小"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <span id="mask-zoom-level" class="zoom-level-text">100%</span>
+                    <button id="mask-zoom-in" class="tool-btn icon-only" title="拡大"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button id="mask-zoom-fit" class="tool-btn icon-only" title="画面に合わせる"><i class="fa-solid fa-expand"></i></button>
+                </div>
+
+                <div class="toolbar-info">
+                    <span class="security-badge"><i class="fa-solid fa-shield-halved"></i> 完全不可逆化（安全保護）</span>
+                </div>
+            </div>
+
+            <div class="masking-workspace" id="masking-workspace">
+                <div class="canvas-wrapper" id="canvas-wrapper">
+                    <!-- 下絵用Canvasとマスク描画インタラクティブCanvas -->
+                    <canvas id="mask-bg-canvas"></canvas>
+                    <canvas id="mask-interactive-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="modal-footer masking-modal-footer">
+                <div class="footer-left">
+                    <span id="mask-count-info" class="mask-count-text">現在のマスク数: 0</span>
+                </div>
+                <div class="footer-actions">
+                    <button id="mask-cancel-btn" class="secondary-btn">キャンセル</button>
+                    <button id="mask-download-img-btn" class="secondary-btn">
+                        <i class="fa-solid fa-image"></i> 画像で保存
+                    </button>
+                    <button id="mask-download-pdf-btn" class="secondary-btn">
+                        <i class="fa-solid fa-file-pdf"></i> PDFで保存
+                    </button>
+                    <button id="mask-apply-btn" class="action-btn-primary">
+                        <i class="fa-solid fa-check"></i> リストに反映して保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="loading-overlay" class="loading-overlay hidden">
         <div class="spinner"></div>
         <p>PDFを処理中...</p>
